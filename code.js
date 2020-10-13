@@ -7,6 +7,10 @@ db = conn.getDB("a1");
 
 
 //Q1
+// Find out the number of general tweets, replies and retweets in the data set. A
+// general tweet is a tweet with no replyto_id, nor retweet_id field; a reply is a tweet
+// with the replyto_id field; a retweet is a tweet with the retweet_id field.
+
 var General_Tweet = db.tweets.aggregate([{$match:{replyto_id:{$exists: false},retweet_id:{$exists: false}}},{$group:{_id:null,count:{$sum:1}}}]).toArray()[0]["count"]
 var Reply = db.tweets.aggregate([{$match:{replyto_id:{$exists: true},retweet_id:{$exists: false}}},{$group:{_id:null,count:{$sum:1}}}]).toArray()[0]["count"]
 var Retweet = db.tweets.aggregate([{$match:{replyto_id:{$exists: false},retweet_id:{$exists: true}}},{$group:{_id:null,count:{$sum:1}}}]).toArray()[0]["count"]
@@ -18,13 +22,18 @@ db.result.drop()
 
 
 //Q2
-
+//  Find out the top 5 hashtags sorted by their occurrence in general or reply tweets.
+// We do not count retweet, which has the same textual content as the parent tweet.
 
 var cursor = db.tweets.aggregate([{$match:{hash_tags:{$exists: true},retweet_id:{$exists: false}}},{$unwind: "$hash_tags"},{$group:{_id:{text:"$hash_tags.text"},count:{$sum:1}}},{$sort:{count:-1}},{$limit:5}]);
 
 while(cursor.hasNext()){printjson(cursor.next())};
 
 //Q3
+// Find out the tweet taking the longest time to receive a reply; print out the id
+// and the duration between the tweet’s creation time and the creation time of its first
+// reply in second
+
 db.tweets.aggregate([
 {$match:{"replyto_id":{$exists:true}}},
 {$group:{_id:"$replyto_id",earlist_time:{$min:"$created_at"}}},
@@ -51,6 +60,9 @@ db.result1.drop()
 
 
 //Q4
+//  Find out the number of general and reply tweets that do not have all their
+// retweets included in the data set. Note that the total number of retweets a tweet is
+// stored in the field retweet_count
 
 db.tweets.aggregate([
 {$match:{"retweet_id":{$exists:true}}},
@@ -90,6 +102,9 @@ db.result2.drop()
 
 
 //Q5
+// Find out the number of tweets that do not have its parent tweet object in the
+// data set
+
 db.tweets.aggregate([
 {$group:{_id:"$id"}}
 ,{$out:"result"}
@@ -139,6 +154,9 @@ db.result2.drop()
 printjson(count_a+count_b)
 
 //Q6
+//  Find out the number of general tweets that do not have a reply nor a retweet in
+// the data set
+
 db.tweets.aggregate([
 {$match:{replyto_id:{$exists:true}}},
 {$group:{_id:"$replyto_id"}}
